@@ -44,10 +44,28 @@ export type IntegrityEventType =
   | "MICROPHONE_DISABLED"
   | "CAMERA_PERMISSION_LOST"
   | "MICROPHONE_PERMISSION_LOST"
+  | "CAMERA_DISCONNECT"
   | "COPY_ATTEMPT"
   | "PASTE_ATTEMPT"
   | "NETWORK_DISCONNECT"
   | "REPEATED_SUBMISSION"
   | "NO_FACE_DETECTED"
-  | "MULTIPLE_FACES_DETECTED";
+  | "MULTIPLE_FACES_DETECTED"
+  | "PHONE_DETECTED"
+  | "EXCESSIVE_HEAD_MOVEMENT"
+  | "EXCESSIVE_GAZE";
 export type IntegritySeverity = "LOW" | "MEDIUM" | "HIGH";
+
+export type ViolationLevel = 0 | 1 | 2 | 3;
+export type ViolationStatus = "NORMAL" | "WARNING" | "FINAL_WARNING" | "TERMINATED";
+
+export type IntegritySummary = {
+  score: number;
+  riskLevel: RiskLevel;
+  eventCount: number;
+  violationCount: number;
+  violationLevel: ViolationLevel;
+  status: ViolationStatus;
+  warningMessage: string | null;
+  terminated: boolean;
+};

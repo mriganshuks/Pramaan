@@ -133,14 +133,80 @@ export async function respondToInvitation(invitationId: string, candidateId: str
 export async function createSkillChallenge(teamId: string, ownerId: string, input: z.infer<typeof challengeSchema>) {
   const team = await requireTeamOwner(teamId, ownerId);
   const candidateId = objectId(input.candidateId, "candidate");
-  if (!team.members.some((member) => member.profileId.toString() === candidateId.toString())) {
-    throw new ApiError("Invite the candidate and wait for acceptance before sending a challenge.", 409, "CANDIDATE_NOT_ON_TEAM");
+  if (!(await User.exists({ _id: candidateId }))) {
+    throw new ApiError("Candidate profile not found.", 404, "CANDIDATE_NOT_FOUND");
+  }
+  if (team.members.some((member) => member.profileId.toString() === candidateId.toString())) {
+    throw new ApiError("This candidate is already a member of your team.", 409, "ALREADY_MEMBER");
+  }
+  if (team.members.length >= team.capacity) {
+    throw new ApiError("Team is already at maximum capacity.", 409, "TEAM_FULL");
   }
   const duplicate = await SkillChallenge.exists({ teamId: team._id, candidateId, state: { $in: ["SENT", "IN_PROGRESS"] } });
   if (duplicate) throw new ApiError("This candidate already has an active skill challenge for this team.", 409, "CHALLENGE_EXISTS");
   const generated = await generateAssessment({ skill: input.skill, difficulty: "intermediate", count: 5 });
   const challenge = await SkillChallenge.create({ teamId: team._id, candidateId, createdBy: objectId(ownerId, "profile"), skill: input.skill, questions: generated.questions, generatedBy: generated.generatedBy, state: "SENT" });
   return { id: challenge._id.toString(), state: challenge.state, skill: challenge.skill };
+}
+
+export async function listTeamChallenges(teamId: string, ownerId: string) {
+  const team = await requireTeamOwner(teamId, ownerId);
+  const challenges = await SkillChallenge.find({ teamId: team._id }).sort({ createdAt: -1 }).lean();
+  const candidateIds = challenges.map((c) => c.candidateId);
+  const candidates = await User.find({ _id: { $in: candidateIds } }).select("name handle avatarUrl headline skills").lean();
+  const candidateMap = new Map(candidates.map((c) => [c._id.toString(), c]));
+
+  return challenges.map((c) => ({
+    id: c._id.toString(),
+    teamId: c.teamId.toString(),
+    candidateId: c.candidateId.toString(),
+    candidate: candidateMap.get(c.candidateId.toString()) ?? null,
+    skill: c.skill,
+    state: c.state,
+    score: c.score ?? null,
+    integrityScore: c.integrityScore ?? null,
+    riskLevel: c.riskLevel ?? null,
+    startedAt: c.startedAt?.toISOString() ?? null,
+    submittedAt: c.submittedAt?.toISOString() ?? null,
+    createdAt: (c as { createdAt?: Date }).createdAt?.toISOString() ?? null,
+  }));
+}
+
+export async function decideSkillChallenge(
+  teamId: string,
+  ownerId: string,
+  challengeId: string,
+  decision: "ACCEPT" | "REJECT"
+) {
+  const team = await requireTeamOwner(teamId, ownerId);
+  const challenge = await SkillChallenge.findOne({ _id: objectId(challengeId, "challenge"), teamId: team._id });
+  if (!challenge) throw new ApiError("Challenge not found for this team.", 404, "CHALLENGE_NOT_FOUND");
+  if (challenge.state !== "COMPLETED") {
+    throw new ApiError("Only completed challenges can be accepted or rejected.", 400, "CHALLENGE_NOT_COMPLETED");
+  }
+
+  if (decision === "ACCEPT") {
+    if (team.members.length >= team.capacity) {
+      throw new ApiError("This team is already full.", 409, "TEAM_FULL");
+    }
+    const candidateId = challenge.candidateId;
+    if (!team.members.some((m) => m.profileId.toString() === candidateId.toString())) {
+      team.members.push({
+        profileId: candidateId,
+        role: "Member",
+        status: "ACCEPTED",
+        joinedAt: new Date(),
+      });
+      await team.save();
+    }
+    challenge.state = "ACCEPTED";
+    await challenge.save();
+    return { status: "ACCEPTED", message: "Candidate accepted into team." };
+  } else {
+    challenge.state = "REJECTED";
+    await challenge.save();
+    return { status: "REJECTED", message: "Candidate rejected." };
+  }
 }
 
 export async function startSkillChallenge(challengeId: string, candidateId: string) {

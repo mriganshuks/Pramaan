@@ -14,13 +14,37 @@ const javascriptQuestions: BankQuestion[] = [
   { prompt: "Which method converts JSON text to a JavaScript value?", topic: "json", options: [{ id: "A", text: "JSON.stringify" }, { id: "B", text: "JSON.decode" }, { id: "C", text: "JSON.parse" }, { id: "D", text: "JSON.value" }], correctOption: "C", explanation: "JSON.parse reads JSON text into a JavaScript value." },
 ];
 
-const foundationsQuestions: BankQuestion[] = [
-  { prompt: "What is the primary purpose of a unit test?", topic: "testing", options: [{ id: "A", text: "To test a small behavior in isolation" }, { id: "B", text: "To replace code review" }, { id: "C", text: "To deploy an application" }, { id: "D", text: "To encrypt a database" }], correctOption: "A", explanation: "Unit tests verify small units of behavior in isolation." },
-  { prompt: "Which data structure generally provides average O(1) key lookup?", topic: "data structures", options: [{ id: "A", text: "Array scan" }, { id: "B", text: "Hash map" }, { id: "C", text: "Linked-list traversal" }, { id: "D", text: "Bubble sort" }], correctOption: "B", explanation: "Hash maps have average constant-time lookup." },
-  { prompt: "What does an HTTP 404 response indicate?", topic: "web", options: [{ id: "A", text: "A request succeeded" }, { id: "B", text: "Authentication is required" }, { id: "C", text: "The requested resource was not found" }, { id: "D", text: "The server executed too slowly" }], correctOption: "C", explanation: "404 means the requested resource could not be found." },
-  { prompt: "Why should secrets be stored in environment variables rather than browser code?", topic: "security", options: [{ id: "A", text: "They become public in browser code" }, { id: "B", text: "It improves CSS rendering" }, { id: "C", text: "It makes databases faster" }, { id: "D", text: "It removes the need for validation" }], correctOption: "A", explanation: "Browser-delivered code can be inspected by anyone." },
-  { prompt: "What is the main purpose of an index in a database?", topic: "databases", options: [{ id: "A", text: "To format HTML" }, { id: "B", text: "To speed up selected queries" }, { id: "C", text: "To replace data validation" }, { id: "D", text: "To encrypt every record" }], correctOption: "B", explanation: "Indexes improve lookup performance for suitable queries." },
-  { prompt: "What is a race condition?", topic: "concurrency", options: [{ id: "A", text: "A UI animation" }, { id: "B", text: "A bug caused by unsynchronised operation ordering" }, { id: "C", text: "A syntax error" }, { id: "D", text: "A database backup" }], correctOption: "B", explanation: "Race conditions arise when outcomes depend on timing of concurrent work." },
+const typescriptQuestions: BankQuestion[] = [
+  { prompt: "What is the key difference between 'type' and 'interface' in TypeScript?", topic: "types", options: [{ id: "A", text: "Interfaces can be merged with subsequent declarations; types cannot" }, { id: "B", text: "Types only work for primitives" }, { id: "C", text: "Interfaces cannot extend other interfaces" }, { id: "D", text: "Types are converted to runtime objects" }], correctOption: "A", explanation: "TypeScript interface declaration merging allows multiple interface blocks with the same name to combine." },
+  { prompt: "What does the 'unknown' type represent in TypeScript?", topic: "types", options: [{ id: "A", text: "A type-safe counterpart of 'any' requiring narrowing before operations" }, { id: "B", text: "A value that never returns" }, { id: "C", text: "An undefined variable" }, { id: "D", text: "A strictly private class member" }], correctOption: "A", explanation: "unknown requires type checking or type assertion before operations can be safely performed." },
+  { prompt: "Which operator asserts that an expression is not null or undefined?", topic: "operators", options: [{ id: "A", text: "Non-null assertion operator (!)" }, { id: "B", text: "Nullish coalescing (??)" }, { id: "C", text: "Optional chaining (?.)" }, { id: "D", text: "Bitwise NOT (~)" }], correctOption: "A", explanation: "The postfix exclamation mark tells TypeScript the value is guaranteed not to be null or undefined." },
+  { prompt: "What is the return type of a function marked 'never'?", topic: "functions", options: [{ id: "A", text: "A function that either throws an error or never returns" }, { id: "B", text: "A function returning void" }, { id: "C", text: "A function returning undefined" }, { id: "D", text: "An asynchronous promise" }], correctOption: "A", explanation: "never represents values that never occur, such as functions with infinite loops or unconditional throws." },
+  { prompt: "Which utility type constructs a type with all properties of T set to optional?", topic: "utility-types", options: [{ id: "A", text: "Partial<T>" }, { id: "B", text: "Required<T>" }, { id: "C", text: "Pick<T, K>" }, { id: "D", text: "Readonly<T>" }], correctOption: "A", explanation: "Partial<T> transforms all properties of T into optional fields." },
+  { prompt: "What does 'Record<K, T>' construct in TypeScript?", topic: "utility-types", options: [{ id: "A", text: "An object type with keys of type K and values of type T" }, { id: "B", text: "An immutable array of T" }, { id: "C", text: "A database transaction" }, { id: "D", text: "A tuple of length K" }], correctOption: "A", explanation: "Record<K, T> maps property keys of type K to values of type T." },
+];
+
+const pythonQuestions: BankQuestion[] = [
+  { prompt: "What is the difference between a list and a tuple in Python?", topic: "data-structures", options: [{ id: "A", text: "Lists are mutable; tuples are immutable" }, { id: "B", text: "Tuples can only store integers" }, { id: "C", text: "Lists cannot be indexed" }, { id: "D", text: "Tuples are dynamically resized" }], correctOption: "A", explanation: "Lists can be modified in place, whereas tuples cannot be altered after creation." },
+  { prompt: "How does Python handle memory management?", topic: "runtime", options: [{ id: "A", text: "Reference counting combined with a generational garbage collector" }, { id: "B", text: "Manual allocation using malloc and free" }, { id: "C", text: "Mark and sweep without reference counts" }, { id: "D", text: "Static compile-time memory reservation" }], correctOption: "A", explanation: "Python tracks reference counts and uses cyclic GC for self-referencing collections." },
+  { prompt: "What is the purpose of the 'yield' keyword in Python?", topic: "generators", options: [{ id: "A", text: "It turns a function into a generator that produces values lazily" }, { id: "B", text: "It immediately terminates the program" }, { id: "C", text: "It declares a static variable" }, { id: "D", text: "It pauses thread execution" }], correctOption: "A", explanation: "yield produces a value and suspends the generator function state until next iteration." },
+  { prompt: "Which method is called when an instance is created in Python?", topic: "oop", options: [{ id: "A", text: "__init__" }, { id: "B", text: "__construct__" }, { id: "C", text: "__new_instance__" }, { id: "D", text: "__start__" }], correctOption: "A", explanation: "__init__ is the initializer method for new object instances." },
+  { prompt: "What is a Python decorator?", topic: "functions", options: [{ id: "A", text: "A function that takes another function and extends its behavior without modifying it" }, { id: "B", text: "A CSS style for Jupyter notebooks" }, { id: "C", text: "A design pattern for database schemas" }, { id: "D", text: "A type annotation keyword" }], correctOption: "A", explanation: "Decorators wrap callable objects to modify or enhance their behavior dynamically." },
+  { prompt: "What does the GIL (Global Interpreter Lock) in CPython do?", topic: "concurrency", options: [{ id: "A", text: "Prevents multiple native threads from executing Python bytecodes at once" }, { id: "B", text: "Encrypts bytecode on disk" }, { id: "C", text: "Locks files during read operations" }, { id: "D", text: "Ensures network sockets are thread-safe" }], correctOption: "A", explanation: "CPython's GIL ensures only one thread executes Python bytecode at any given moment." },
+];
+
+const reactQuestions: BankQuestion[] = [
+  { prompt: "What is the primary rule of React Hooks?", topic: "hooks", options: [{ id: "A", text: "Only call hooks at the top level of React function components" }, { id: "B", text: "Hooks must be called inside standard loops" }, { id: "C", text: "Hooks only run in class components" }, { id: "D", text: "Hooks cannot access state" }], correctOption: "A", explanation: "Hooks must be called unconditionally at the top level to preserve consistent hook order." },
+  { prompt: "Why is the 'key' prop necessary when rendering arrays in React?", topic: "reconciliation", options: [{ id: "A", text: "It helps React identify which items have changed, added, or removed" }, { id: "B", text: "It is required by CSS stylesheets" }, { id: "C", text: "It encrypts element data in the DOM" }, { id: "D", text: "It sets the database primary key" }], correctOption: "A", explanation: "Keys give stable identity to list items across renders for efficient diffing." },
+  { prompt: "What does useEffect return if a cleanup function is provided?", topic: "lifecycle", options: [{ id: "A", text: "A function that runs before the component unmounts or re-executes the effect" }, { id: "B", text: "A promise resolving to DOM elements" }, { id: "C", text: "A boolean indicating render success" }, { id: "D", text: "The previous props" }], correctOption: "A", explanation: "The returned cleanup function cancels subscriptions, timers, or event handlers." },
+  { prompt: "What is the purpose of React Server Components (RSC)?", topic: "architecture", options: [{ id: "A", text: "To render components on the server without sending their JS bundle to the client" }, { id: "B", text: "To run WebGL animations" }, { id: "C", text: "To replace all client-side state hooks" }, { id: "D", text: "To compile TypeScript to WebAssembly" }], correctOption: "A", explanation: "RSCs execute solely on the server, minimizing client JavaScript bundle size." },
+  { prompt: "What does useCallback optimize in React?", topic: "performance", options: [{ id: "A", text: "Memoizes a callback function instance between renders" }, { id: "B", text: "Caches network HTTP responses" }, { id: "C", text: "Prevents CSS re-layouts" }, { id: "D", text: "Compiles JSX to bytecode" }], correctOption: "A", explanation: "useCallback returns a memoized version of the callback that only changes when dependencies change." },
+];
+
+const databaseQuestions: BankQuestion[] = [
+  { prompt: "What is the ACID principle in transactional databases?", topic: "transactions", options: [{ id: "A", text: "Atomicity, Consistency, Isolation, Durability" }, { id: "B", text: "Asynchronous, Concurrent, Indexed, Distributed" }, { id: "C", text: "Authentication, Cryptography, Integrity, Decryption" }, { id: "D", text: "Application, Cluster, Interface, Driver" }], correctOption: "A", explanation: "ACID guarantees that database transactions are processed reliably." },
+  { prompt: "What is the main advantage of a B-Tree index in relational databases?", topic: "indexes", options: [{ id: "A", text: "Efficient search, sequential access, insertions, and deletions in O(log n)" }, { id: "B", text: "Eliminating the need for foreign keys" }, { id: "C", text: "Compressing images stored in tables" }, { id: "D", text: "Automatic database sharding" }], correctOption: "A", explanation: "B-Trees keep data sorted and allow search, sequential access, and updates in logarithmic time." },
+  { prompt: "What is the purpose of database normalization?", topic: "modeling", options: [{ id: "A", text: "To minimize data redundancy and prevent update anomalies" }, { id: "B", text: "To increase data duplication for speed" }, { id: "C", text: "To eliminate all secondary indexes" }, { id: "D", text: "To convert SQL queries to NoSQL" }], correctOption: "A", explanation: "Normalization organizes fields and table relationships to reduce redundant data." },
+  { prompt: "In MongoDB, what does an index on a compound key { a: 1, b: 1 } support?", topic: "indexes", options: [{ id: "A", text: "Queries on 'a', and queries on both 'a' and 'b'" }, { id: "B", text: "Queries exclusively on 'b' only" }, { id: "C", text: "Only queries with no filters" }, { id: "D", text: "Full-text search queries only" }], correctOption: "A", explanation: "Compound indexes can serve queries matching any prefix of the indexed fields." },
 ];
 
 function shuffle<T>(values: T[]) {
@@ -45,9 +69,26 @@ export function questionFingerprint(question: Pick<AssessmentQuestion, "prompt" 
 
 export function fallbackQuestionSet(skill: string, count: number, _difficulty: Difficulty, previousFingerprints: string[] = []) {
   const normalized = skill.trim().toLowerCase();
-  const bank = normalized === "javascript" || normalized === "js" ? javascriptQuestions : foundationsQuestions;
+  let bank = javascriptQuestions;
+
+  if (normalized.includes("typescript") || normalized === "ts") {
+    bank = typescriptQuestions;
+  } else if (normalized.includes("python") || normalized === "py") {
+    bank = pythonQuestions;
+  } else if (normalized.includes("react") || normalized.includes("next") || normalized.includes("frontend")) {
+    bank = reactQuestions;
+  } else if (normalized.includes("sql") || normalized.includes("data") || normalized.includes("mongo") || normalized.includes("postgres")) {
+    bank = databaseQuestions;
+  } else if (normalized.includes("javascript") || normalized === "js") {
+    bank = javascriptQuestions;
+  } else {
+    bank = [...typescriptQuestions, ...javascriptQuestions, ...pythonQuestions, ...databaseQuestions];
+  }
+
   const unseen = bank.filter((question) => !previousFingerprints.includes(questionFingerprint(question)));
-  const selected = shuffle(unseen.length >= count ? unseen : bank).slice(0, Math.min(count, bank.length));
+  const pool = unseen.length >= count ? unseen : bank;
+  const selected = shuffle(pool).slice(0, Math.min(count, pool.length));
+
   return selected.map((question) => {
     const variant = shuffledOptions(question);
     const publicQuestion = { prompt: question.prompt, options: variant.options };

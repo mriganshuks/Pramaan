@@ -18,5 +18,9 @@ export function getOpenAIClient() {
 }
 
 export function assessmentModel() {
-  return process.env.OPENAI_ASSESSMENT_MODEL?.trim() || "gpt-5.1-mini";
+  const model = process.env.OPENAI_ASSESSMENT_MODEL?.trim();
+  if (!model || model === "gpt-5.1-mini" || model.includes("gpt-5")) {
+    return "gpt-4o-mini";
+  }
+  return model;
 }

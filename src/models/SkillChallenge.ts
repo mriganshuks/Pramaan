@@ -19,7 +19,7 @@ const skillChallengeSchema = new Schema(
     candidateId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     skill: { type: String, required: true, trim: true },
-    state: { type: String, enum: ["SENT", "IN_PROGRESS", "COMPLETED", "EXPIRED", "CANCELLED"], required: true, default: "SENT" },
+    state: { type: String, enum: ["SENT", "IN_PROGRESS", "COMPLETED", "EXPIRED", "CANCELLED", "ACCEPTED", "REJECTED"], required: true, default: "SENT" },
     questions: { type: [questionSchema], required: true },
     generatedBy: { type: String, enum: ["openai"], required: true },
     startedAt: { type: Date },

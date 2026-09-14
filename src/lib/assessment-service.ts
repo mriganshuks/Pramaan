@@ -53,11 +53,38 @@ export async function getAssessmentAttempt(profileId: string, attemptId: string)
 export async function recordAssessmentIntegrity(input: { profileId: string; attemptId: string; events: Array<{ type: IntegrityEventType; severity: "LOW" | "MEDIUM" | "HIGH"; timestamp?: Date; metadata?: Record<string, string | number | boolean> }> }) {
   const targetId = objectId(input.attemptId);
   const profileObjectId = objectId(input.profileId);
-  const attempt = await AssessmentAttempt.exists({ _id: targetId, profileId: profileObjectId, state: "IN_PROGRESS" });
-  if (!attempt) throw new ApiError("This assessment can no longer receive integrity events.", 409, "INVALID_STATE");
-  await IntegrityEvent.insertMany(input.events.map((event) => ({ targetId, targetType: "ASSESSMENT", profileId: profileObjectId, type: event.type, severity: event.severity, timestamp: event.timestamp ?? new Date(), metadata: event.metadata })), { ordered: false });
-  const events = await IntegrityEvent.find({ targetId }).lean();
-  return integritySummary(events as Array<{ type: IntegrityEventType; severity: string }>);
+  const attempt = await AssessmentAttempt.findOne({ _id: targetId, profileId: profileObjectId });
+  if (!attempt || attempt.state !== "IN_PROGRESS") {
+    throw new ApiError("This assessment can no longer receive integrity events.", 409, "INVALID_STATE");
+  }
+
+  await IntegrityEvent.insertMany(
+    input.events.map((event) => ({
+      targetId,
+      targetType: "ASSESSMENT",
+      profileId: profileObjectId,
+      type: event.type,
+      severity: event.severity,
+      timestamp: event.timestamp ?? new Date(),
+      metadata: event.metadata,
+    })),
+    { ordered: false }
+  );
+
+  const allEvents = await IntegrityEvent.find({ targetId }).lean();
+  const summary = integritySummary(allEvents as Array<{ type: IntegrityEventType; severity: string; timestamp?: Date }>);
+
+  // If 3 confirmed violations reached, server enforces immediate termination
+  if (summary.terminated) {
+    attempt.state = "FAILED";
+    attempt.integrityScore = summary.score;
+    attempt.riskLevel = "HIGH";
+    attempt.verificationStatus = "NOT_VERIFIED";
+    attempt.submittedAt = new Date();
+    await attempt.save();
+  }
+
+  return summary;
 }
 
 export async function submitAssessmentAttempt(input: { profileId: string; attemptId: string; answers: Record<string, string>; codingSubmission: string; timeout: boolean }) {
@@ -71,6 +98,9 @@ export async function submitAssessmentAttempt(input: { profileId: string; attemp
   if (!attempt) {
     const existing = await AssessmentAttempt.findOne({ _id: attemptId, profileId: profileObjectId }).lean();
     if (!existing) throw new ApiError("Assessment attempt not found.", 404, "NOT_FOUND");
+    if (existing.state === "FAILED") {
+      throw new ApiError("This assessment was terminated due to confirmed proctoring violations.", 403, "ASSESSMENT_TERMINATED");
+    }
     throw new ApiError("This assessment was already submitted or is being evaluated.", 409, "DUPLICATE_SUBMISSION");
   }
   const expired = Date.now() > attempt.expiresAt.getTime();

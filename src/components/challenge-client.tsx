@@ -56,6 +56,37 @@ export default function ChallengeClient({ challengeId }: ChallengeClientProps) {
     return () => { current = false; };
   }, [challengeId]);
 
+  useEffect(() => {
+    if (questions.length === 0 || result) return;
+
+    const signalIntegrity = (type: string, severity: "LOW" | "MEDIUM" | "HIGH") => {
+      void fetch(`/api/challenges/${challengeId}/integrity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          events: [{ type, severity, timestamp: new Date().toISOString() }],
+        }),
+      }).catch(() => undefined);
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        signalIntegrity("TAB_HIDDEN", "MEDIUM");
+      }
+    };
+    const handleBlur = () => {
+      signalIntegrity("WINDOW_BLUR", "LOW");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, [challengeId, questions.length, result]);
+
   async function submit() {
     if (submitting || result) return;
     setSubmitting(true);
