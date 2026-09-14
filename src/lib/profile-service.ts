@@ -2,6 +2,20 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { User } from "@/models/User";
 import { ApiError, isDuplicateKeyError } from "@/lib/api";
+import { isDatabaseConnected } from "@/lib/mongodb";
+import {
+  memoryAddEvidence,
+  memoryAddProject,
+  memoryAddSkill,
+  memoryCreateProfile,
+  memoryGetOwnProfile,
+  memoryPublicProfile,
+  memoryPublicProfileByHandle,
+  memoryRemoveEvidence,
+  memoryRemoveProject,
+  memoryRemoveSkill,
+  memoryUpdateOwnProfile,
+} from "@/lib/memory-store";
 import { serializeProfile } from "@/lib/serializers";
 
 const urlSchema = z.string().url().max(500);
@@ -31,6 +45,9 @@ function validId(id: string) {
 }
 
 export async function createProfile(input: z.infer<typeof createProfileSchema>) {
+  if (!isDatabaseConnected()) {
+    return memoryCreateProfile(input);
+  }
   try {
     const profile = await User.create({ ...input, skills: [], projects: [], evidence: [] });
     return serializeProfile(profile);
@@ -41,18 +58,27 @@ export async function createProfile(input: z.infer<typeof createProfileSchema>) 
 }
 
 export async function getOwnProfile(profileId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryGetOwnProfile(profileId);
+  }
   const profile = await User.findById(validId(profileId)).lean();
   if (!profile) throw new ApiError("Profile not found.", 404, "PROFILE_NOT_FOUND");
   return serializeProfile(profile);
 }
 
 export async function updateOwnProfile(profileId: string, input: z.infer<typeof profilePatchSchema>) {
+  if (!isDatabaseConnected()) {
+    return memoryUpdateOwnProfile(profileId, input);
+  }
   const profile = await User.findByIdAndUpdate(validId(profileId), { $set: input }, { new: true, runValidators: true }).lean();
   if (!profile) throw new ApiError("Profile not found.", 404, "PROFILE_NOT_FOUND");
   return serializeProfile(profile);
 }
 
 export async function addSkill(profileId: string, name: string) {
+  if (!isDatabaseConnected()) {
+    return memoryAddSkill(profileId, name);
+  }
   const profile = await User.findById(validId(profileId));
   if (!profile) throw new ApiError("Profile not found.", 404, "PROFILE_NOT_FOUND");
   const normalizedName = name.trim().toLowerCase();
@@ -63,6 +89,9 @@ export async function addSkill(profileId: string, name: string) {
 }
 
 export async function removeSkill(profileId: string, name: string) {
+  if (!isDatabaseConnected()) {
+    return memoryRemoveSkill(profileId, name);
+  }
   const profile = await User.findById(validId(profileId));
   if (!profile) throw new ApiError("Profile not found.", 404, "PROFILE_NOT_FOUND");
   const normalizedName = name.trim().toLowerCase();
@@ -74,6 +103,9 @@ export async function removeSkill(profileId: string, name: string) {
 }
 
 export async function addProject(profileId: string, input: z.infer<typeof projectSchema>) {
+  if (!isDatabaseConnected()) {
+    return memoryAddProject(profileId, input);
+  }
   const profile = await User.findById(validId(profileId));
   if (!profile) throw new ApiError("Profile not found.", 404, "PROFILE_NOT_FOUND");
   profile.projects.push({ ...input, url: input.url || undefined });
@@ -81,7 +113,21 @@ export async function addProject(profileId: string, input: z.infer<typeof projec
   return serializeProfile(profile);
 }
 
+export async function removeProject(profileId: string, projectId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryRemoveProject(profileId, projectId);
+  }
+  const profile = await User.findById(validId(profileId));
+  if (!profile) throw new ApiError("Profile not found.", 404, "PROFILE_NOT_FOUND");
+  profile.projects.pull({ _id: validId(projectId) });
+  await profile.save();
+  return serializeProfile(profile);
+}
+
 export async function addEvidence(profileId: string, input: z.infer<typeof evidenceSchema>) {
+  if (!isDatabaseConnected()) {
+    return memoryAddEvidence(profileId, input);
+  }
   const profile = await User.findById(validId(profileId));
   if (!profile) throw new ApiError("Profile not found.", 404, "PROFILE_NOT_FOUND");
   profile.evidence.push(input);
@@ -95,7 +141,21 @@ export async function addEvidence(profileId: string, input: z.infer<typeof evide
   return serializeProfile(profile);
 }
 
+export async function removeEvidence(profileId: string, evidenceId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryRemoveEvidence(profileId, evidenceId);
+  }
+  const profile = await User.findById(validId(profileId));
+  if (!profile) throw new ApiError("Profile not found.", 404, "PROFILE_NOT_FOUND");
+  profile.evidence.pull({ _id: validId(evidenceId) });
+  await profile.save();
+  return serializeProfile(profile);
+}
+
 export async function publicProfile(profileId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryPublicProfile(profileId);
+  }
   const profile = await User.findById(validId(profileId)).lean();
   if (!profile) throw new ApiError("Candidate not found.", 404, "PROFILE_NOT_FOUND");
   const safe = serializeProfile(profile);
@@ -104,6 +164,9 @@ export async function publicProfile(profileId: string) {
 }
 
 export async function publicProfileByHandle(handle: string) {
+  if (!isDatabaseConnected()) {
+    return memoryPublicProfileByHandle(handle);
+  }
   const normalizedHandle = handle.trim().toLowerCase();
   if (!/^[a-z0-9_]{3,32}$/.test(normalizedHandle)) throw new ApiError("Skill Passport not found.", 404, "PROFILE_NOT_FOUND");
   const profile = await User.findOne({ handle: normalizedHandle }).lean();
@@ -112,3 +175,4 @@ export async function publicProfileByHandle(handle: string) {
   delete safe.email;
   return safe;
 }
+

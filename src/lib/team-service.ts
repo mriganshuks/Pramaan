@@ -7,6 +7,26 @@ import { SkillChallenge } from "@/models/SkillChallenge";
 import { IntegrityEvent } from "@/models/IntegrityEvent";
 import { User } from "@/models/User";
 import { ApiError, isDuplicateKeyError } from "@/lib/api";
+import { isDatabaseConnected } from "@/lib/mongodb";
+import {
+  memoryCreateHackathon,
+  memoryCreateSkillChallenge,
+  memoryCreateTeam,
+  memoryDecideSkillChallenge,
+  memoryDiscoverCandidates,
+  memoryGetSkillChallenge,
+  memoryGetTeam,
+  memoryJoinHackathon,
+  memoryLeaveHackathon,
+  memoryListHackathons,
+  memoryListMyTeams,
+  memoryListTeamChallenges,
+  memoryRecordChallengeIntegrity,
+  memoryRespondToInvitation,
+  memorySendInvitation,
+  memoryStartSkillChallenge,
+  memorySubmitSkillChallenge,
+} from "@/lib/memory-store";
 import { generateAssessment } from "@/lib/assessment-generation";
 import { integritySummary, scoreMcq } from "@/lib/assessment-scoring";
 import { publicQuestions } from "@/lib/serializers";
@@ -33,21 +53,33 @@ async function requireTeamOwner(teamId: string, profileId: string) {
 }
 
 export async function listHackathons(profileId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryListHackathons(profileId);
+  }
   const profileObjectId = objectId(profileId, "profile");
   const hackathons = await Hackathon.find({}).sort({ startsAt: 1 }).lean();
   return hackathons.map((hackathon) => ({ id: hackathon._id.toString(), name: hackathon.name, description: hackathon.description, location: hackathon.location, startsAt: hackathon.startsAt.toISOString(), endsAt: hackathon.endsAt.toISOString(), joined: hackathon.participantIds.some((id) => id.toString() === profileObjectId.toString()), participantCount: hackathon.participantIds.length }));
 }
 export async function createHackathon(profileId: string, input: z.infer<typeof hackathonSchema>) {
+  if (!isDatabaseConnected()) {
+    return memoryCreateHackathon(profileId, input);
+  }
   const creator = objectId(profileId, "profile");
   const hackathon = await Hackathon.create({ ...input, createdBy: creator, participantIds: [creator] });
   return { id: hackathon._id.toString(), name: hackathon.name };
 }
 export async function joinHackathon(profileId: string, hackathonId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryJoinHackathon(profileId, hackathonId);
+  }
   const hackathon = await Hackathon.findByIdAndUpdate(objectId(hackathonId, "hackathon"), { $addToSet: { participantIds: objectId(profileId, "profile") } }, { new: true });
   if (!hackathon) throw new ApiError("Hackathon not found.", 404, "HACKATHON_NOT_FOUND");
   return { id: hackathon._id.toString(), joined: true };
 }
 export async function leaveHackathon(profileId: string, hackathonId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryLeaveHackathon(profileId, hackathonId);
+  }
   const profileObjectId = objectId(profileId, "profile");
   const ownedTeam = await Team.exists({ hackathonId: objectId(hackathonId, "hackathon"), members: { $elemMatch: { profileId: profileObjectId, status: "OWNER" } } });
   if (ownedTeam) throw new ApiError("Transfer or remove your team before leaving this hackathon.", 409, "TEAM_OWNER_CANNOT_LEAVE");
@@ -57,6 +89,9 @@ export async function leaveHackathon(profileId: string, hackathonId: string) {
 }
 
 export async function createTeam(profileId: string, input: z.infer<typeof teamSchema>) {
+  if (!isDatabaseConnected()) {
+    return memoryCreateTeam(profileId, input);
+  }
   const owner = objectId(profileId, "profile");
   const hackathonId = objectId(input.hackathonId, "hackathon");
   const hackathon = await Hackathon.exists({ _id: hackathonId, participantIds: owner });
@@ -70,6 +105,9 @@ export async function createTeam(profileId: string, input: z.infer<typeof teamSc
   }
 }
 export async function listMyTeams(profileId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryListMyTeams(profileId);
+  }
   const teams = await Team.find({ "members.profileId": objectId(profileId, "profile") }).lean();
   const hackathonIds = [...new Set(teams.map((team) => team.hackathonId.toString()))];
   const hackathons = await Hackathon.find({ _id: { $in: hackathonIds } }).lean();
@@ -77,6 +115,9 @@ export async function listMyTeams(profileId: string) {
   return teams.map((team) => ({ ...serializeTeam(team), hackathonName: names.get(team.hackathonId.toString()) ?? "Hackathon" }));
 }
 export async function getTeam(teamId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryGetTeam(teamId);
+  }
   const team = await Team.findById(objectId(teamId, "team")).lean();
   if (!team) throw new ApiError("Team not found.", 404, "TEAM_NOT_FOUND");
   const profiles = await User.find({ _id: { $in: team.members.map((member) => member.profileId) } }).select("displayName headline skills").lean();
@@ -85,6 +126,9 @@ export async function getTeam(teamId: string) {
 }
 
 export async function discoverCandidates(teamId: string, currentProfileId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryDiscoverCandidates(teamId, currentProfileId);
+  }
   const team = await Team.findById(objectId(teamId, "team")).lean();
   if (!team) throw new ApiError("Team not found.", 404, "TEAM_NOT_FOUND");
   const memberIds = new Set(team.members.map((member) => member.profileId.toString()));
@@ -110,6 +154,9 @@ export async function discoverCandidates(teamId: string, currentProfileId: strin
 }
 
 export async function sendInvitation(teamId: string, ownerId: string, input: z.infer<typeof invitationSchema>) {
+  if (!isDatabaseConnected()) {
+    return memorySendInvitation(teamId, ownerId, input);
+  }
   const team = await requireTeamOwner(teamId, ownerId);
   const candidateId = objectId(input.candidateId, "candidate");
   if (team.members.length >= team.capacity) throw new ApiError("This team is already full.", 409, "TEAM_FULL");
@@ -121,6 +168,9 @@ export async function sendInvitation(teamId: string, ownerId: string, input: z.i
   return { id: invitation._id.toString(), status: invitation.status };
 }
 export async function respondToInvitation(invitationId: string, candidateId: string, action: "ACCEPT" | "REJECT") {
+  if (!isDatabaseConnected()) {
+    return memoryRespondToInvitation(invitationId, candidateId, action);
+  }
   const invitation = await Invitation.findOneAndUpdate({ _id: objectId(invitationId, "invitation"), candidateId: objectId(candidateId, "profile"), status: "PENDING" }, { $set: { status: action === "ACCEPT" ? "ACCEPTED" : "REJECTED", respondedAt: new Date() } }, { new: true });
   if (!invitation) throw new ApiError("This invitation is no longer pending.", 409, "INVALID_INVITATION_STATE");
   if (action === "ACCEPT") {
@@ -131,6 +181,9 @@ export async function respondToInvitation(invitationId: string, candidateId: str
 }
 
 export async function createSkillChallenge(teamId: string, ownerId: string, input: z.infer<typeof challengeSchema>) {
+  if (!isDatabaseConnected()) {
+    return memoryCreateSkillChallenge(teamId, ownerId, input);
+  }
   const team = await requireTeamOwner(teamId, ownerId);
   const candidateId = objectId(input.candidateId, "candidate");
   if (!(await User.exists({ _id: candidateId }))) {
@@ -150,6 +203,9 @@ export async function createSkillChallenge(teamId: string, ownerId: string, inpu
 }
 
 export async function listTeamChallenges(teamId: string, ownerId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryListTeamChallenges(teamId, ownerId);
+  }
   const team = await requireTeamOwner(teamId, ownerId);
   const challenges = await SkillChallenge.find({ teamId: team._id }).sort({ createdAt: -1 }).lean();
   const candidateIds = challenges.map((c) => c.candidateId);
@@ -178,6 +234,9 @@ export async function decideSkillChallenge(
   challengeId: string,
   decision: "ACCEPT" | "REJECT"
 ) {
+  if (!isDatabaseConnected()) {
+    return memoryDecideSkillChallenge(teamId, ownerId, challengeId, decision);
+  }
   const team = await requireTeamOwner(teamId, ownerId);
   const challenge = await SkillChallenge.findOne({ _id: objectId(challengeId, "challenge"), teamId: team._id });
   if (!challenge) throw new ApiError("Challenge not found for this team.", 404, "CHALLENGE_NOT_FOUND");
@@ -210,6 +269,9 @@ export async function decideSkillChallenge(
 }
 
 export async function startSkillChallenge(challengeId: string, candidateId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryStartSkillChallenge(challengeId, candidateId);
+  }
   const now = new Date();
   const challenge = await SkillChallenge.findOneAndUpdate(
     { _id: objectId(challengeId, "challenge"), candidateId: objectId(candidateId, "profile"), state: "SENT" },
@@ -221,6 +283,9 @@ export async function startSkillChallenge(challengeId: string, candidateId: stri
 }
 
 export async function recordChallengeIntegrity(input: { challengeId: string; profileId: string; events: Array<{ type: IntegrityEventType; severity: "LOW" | "MEDIUM" | "HIGH"; timestamp?: Date; metadata?: Record<string, string | number | boolean> }> }) {
+  if (!isDatabaseConnected()) {
+    return memoryRecordChallengeIntegrity(input);
+  }
   const challengeId = objectId(input.challengeId, "challenge");
   const profileId = objectId(input.profileId, "profile");
   const exists = await SkillChallenge.exists({ _id: challengeId, candidateId: profileId, state: "IN_PROGRESS" });
@@ -231,6 +296,9 @@ export async function recordChallengeIntegrity(input: { challengeId: string; pro
 }
 
 export async function submitSkillChallenge(input: { challengeId: string; candidateId: string; answers: Record<string, string>; timeout: boolean }) {
+  if (!isDatabaseConnected()) {
+    return memorySubmitSkillChallenge(input);
+  }
   const candidateObjectId = objectId(input.candidateId, "profile");
   const challengeId = objectId(input.challengeId, "challenge");
   const challenge = await SkillChallenge.findOneAndUpdate({ _id: challengeId, candidateId: candidateObjectId, state: "IN_PROGRESS" }, { $set: { state: "COMPLETED", submittedAt: new Date() } }, { new: true }).select("+questions.correctOption +questions.explanation");
@@ -250,6 +318,9 @@ export async function submitSkillChallenge(input: { challengeId: string; candida
 }
 
 export async function getSkillChallenge(challengeId: string, requesterId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryGetSkillChallenge(challengeId, requesterId);
+  }
   const challenge = await SkillChallenge.findById(objectId(challengeId, "challenge")).lean();
   if (!challenge) throw new ApiError("Challenge not found.", 404, "CHALLENGE_NOT_FOUND");
   const team = await Team.findById(challenge.teamId).lean();

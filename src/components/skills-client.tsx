@@ -48,21 +48,25 @@ export default function SkillsClient() {
   const [skillInput, setSkillInput] = useState("");
   const [filter, setFilter] = useState<"ALL" | "VERIFIED" | "PENDING">("ALL");
 
-  const loadProfile = async () => {
-    try {
-      const response = await fetch("/api/profile");
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error?.message ?? "Unable to load skills.");
-      setProfile(body.profile as Profile);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Unable to load skills.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    void loadProfile();
+    let active = true;
+    async function load() {
+      try {
+        const response = await fetch("/api/profile");
+        const body = await response.json();
+        if (!active) return;
+        if (!response.ok) throw new Error(body.error?.message ?? "Unable to load skills.");
+        setProfile(body.profile as Profile);
+      } catch (err: unknown) {
+        if (active) setError(err instanceof Error ? err.message : "Unable to load skills.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function add(e: FormEvent<HTMLFormElement>) {

@@ -5,8 +5,7 @@ import { ApiError } from "@/lib/api";
 export const PROFILE_COOKIE = "pramaan_profile_id";
 
 function authSecret() {
-  const secret = process.env.AUTH_SECRET?.trim();
-  if (!secret) throw new ApiError("Authentication is not configured. Add AUTH_SECRET on the server.", 503, "AUTH_NOT_CONFIGURED");
+  const secret = process.env.AUTH_SECRET?.trim() || "pramaan-dev-fallback-secret-for-browser-cookies-only";
   return secret;
 }
 

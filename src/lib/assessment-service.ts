@@ -3,6 +3,14 @@ import { AssessmentAttempt } from "@/models/AssessmentAttempt";
 import { IntegrityEvent } from "@/models/IntegrityEvent";
 import { User } from "@/models/User";
 import { ApiError } from "@/lib/api";
+import { isDatabaseConnected } from "@/lib/mongodb";
+import {
+  memoryCreateAssessmentAttempt,
+  memoryGetAssessmentAttempt,
+  memoryGetAssessmentResult,
+  memoryRecordAssessmentIntegrity,
+  memorySubmitAssessmentAttempt,
+} from "@/lib/memory-store";
 import { analyzeAssessmentPerformance, generateAssessment } from "@/lib/assessment-generation";
 import { integritySummary, scoreMcq, topicPerformance, verificationFor } from "@/lib/assessment-scoring";
 import { evaluateCodeSafely } from "@/lib/safe-code-execution";
@@ -30,6 +38,9 @@ export function publicAttempt(attempt: {
 }
 
 export async function createAssessmentAttempt(input: { profileId: string; skill: string; difficulty: Difficulty }) {
+  if (!isDatabaseConnected()) {
+    return memoryCreateAssessmentAttempt(input);
+  }
   const profileId = objectId(input.profileId);
   const profile = await User.findById(profileId).select("_id").lean();
   if (!profile) throw new ApiError("Create a profile before starting an assessment.", 404, "PROFILE_NOT_FOUND");
@@ -45,12 +56,18 @@ export async function createAssessmentAttempt(input: { profileId: string; skill:
 }
 
 export async function getAssessmentAttempt(profileId: string, attemptId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryGetAssessmentAttempt(profileId, attemptId);
+  }
   const attempt = await AssessmentAttempt.findOne({ _id: objectId(attemptId), profileId: objectId(profileId) }).lean();
   if (!attempt) throw new ApiError("Assessment attempt not found.", 404, "NOT_FOUND");
   return publicAttempt(attempt);
 }
 
 export async function recordAssessmentIntegrity(input: { profileId: string; attemptId: string; events: Array<{ type: IntegrityEventType; severity: "LOW" | "MEDIUM" | "HIGH"; timestamp?: Date; metadata?: Record<string, string | number | boolean> }> }) {
+  if (!isDatabaseConnected()) {
+    return memoryRecordAssessmentIntegrity(input);
+  }
   const targetId = objectId(input.attemptId);
   const profileObjectId = objectId(input.profileId);
   const attempt = await AssessmentAttempt.findOne({ _id: targetId, profileId: profileObjectId });
@@ -88,6 +105,9 @@ export async function recordAssessmentIntegrity(input: { profileId: string; atte
 }
 
 export async function submitAssessmentAttempt(input: { profileId: string; attemptId: string; answers: Record<string, string>; codingSubmission: string; timeout: boolean }) {
+  if (!isDatabaseConnected()) {
+    return memorySubmitAssessmentAttempt(input);
+  }
   const profileObjectId = objectId(input.profileId);
   const attemptId = objectId(input.attemptId);
   const attempt = await AssessmentAttempt.findOneAndUpdate(
@@ -169,6 +189,9 @@ export async function submitAssessmentAttempt(input: { profileId: string; attemp
 }
 
 export async function getAssessmentResult(profileId: string, attemptId: string) {
+  if (!isDatabaseConnected()) {
+    return memoryGetAssessmentResult(profileId, attemptId);
+  }
   const attempt = await AssessmentAttempt.findOne({ _id: objectId(attemptId), profileId: objectId(profileId) }).lean();
   if (!attempt) throw new ApiError("Assessment attempt not found.", 404, "NOT_FOUND");
   if (!attempt.finalScore && attempt.finalScore !== 0) throw new ApiError("This assessment has not been completed.", 409, "NOT_COMPLETE");
