@@ -12,18 +12,33 @@ export function publicCodingProblem(problem: CodingProblem): PublicCodingProblem
 }
 
 export function serializeProfile(profile: {
-  _id: { toString(): string };
+  _id?: { toString(): string } | string;
+  id?: string;
   displayName: string;
   email?: string;
   handle: string;
-  headline: string;
-  bio: string;
-  location: string;
-  education: string;
-  availableForTeams: boolean;
-  skills: unknown[];
-  projects: unknown[];
-  evidence: unknown[];
+  headline?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  education?: string | null;
+  availableForTeams?: boolean | null;
+  skills?: unknown[];
+  projects?: unknown[];
+  evidence?: unknown[];
 }) {
-  return { id: profile._id.toString(), displayName: profile.displayName, email: profile.email, handle: profile.handle, headline: profile.headline, bio: profile.bio, location: profile.location, education: profile.education, availableForTeams: profile.availableForTeams, skills: profile.skills, projects: profile.projects, evidence: profile.evidence };
+  const id = (profile.id || profile._id?.toString() || "").toString();
+  return {
+    id,
+    displayName: profile.displayName,
+    email: profile.email,
+    handle: profile.handle,
+    headline: profile.headline ?? "",
+    bio: profile.bio ?? "",
+    location: profile.location ?? "",
+    education: profile.education ?? "",
+    availableForTeams: profile.availableForTeams ?? true,
+    skills: profile.skills ?? [],
+    projects: profile.projects ?? [],
+    evidence: profile.evidence ?? [],
+  };
 }

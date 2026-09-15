@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ApiError } from "@/lib/api";
-import { connectToDatabase } from "@/lib/mongodb";
 import { publicProfileByHandle } from "@/lib/profile-service";
 import { 
   ShieldCheck, 
@@ -25,7 +24,6 @@ export const dynamic = "force-dynamic";
 
 async function loadPassport(handle: string) {
   try {
-    await connectToDatabase();
     return { profile: await publicProfileByHandle(handle), error: null };
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();

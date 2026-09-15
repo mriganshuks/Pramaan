@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { connectToDatabase } from "@/lib/mongodb";
-import { findOrCreateUserForSupabaseAuth } from "@/lib/profile-service";
+import { findUserForSupabaseAuth } from "@/lib/profile-service";
 import { PROFILE_COOKIE, profileCookieOptions, signedProfileCookie } from "@/lib/profile-context";
 
 export async function GET(request: Request) {
@@ -15,25 +14,25 @@ export async function GET(request: Request) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (!error && data.user) {
         try {
-          await connectToDatabase();
-          const profile = await findOrCreateUserForSupabaseAuth({
-            supabaseId: data.user.id,
-            email: data.user.email ?? "",
-            displayName: data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? data.user.email?.split("@")[0] ?? "Candidate",
-            avatarUrl: data.user.user_metadata?.avatar_url ?? data.user.user_metadata?.picture,
-          });
+          const profile = await findUserForSupabaseAuth(
+            data.user.id,
+            data.user.email ?? ""
+          );
 
-          const response = NextResponse.redirect(`${origin}${next}`);
           if (profile?.id) {
+            const response = NextResponse.redirect(`${origin}${next}`);
             response.cookies.set(
               PROFILE_COOKIE,
               signedProfileCookie(profile.id),
               profileCookieOptions()
             );
+            return response;
+          } else {
+            // New user without a Pramaan profile yet: direct to onboarding
+            return NextResponse.redirect(`${origin}/onboarding`);
           }
-          return response;
         } catch (dbError) {
-          console.error("Error linking Supabase user to MongoDB profile:", dbError);
+          console.error("Error checking profile in Supabase callback:", dbError);
         }
       }
     }

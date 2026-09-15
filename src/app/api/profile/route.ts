@@ -1,11 +1,9 @@
-import { connectToDatabase } from "@/lib/mongodb";
 import { errorResponse, readJson } from "@/lib/api";
 import { requireCurrentProfileId } from "@/lib/profile-context";
 import { getOwnProfile, profilePatchSchema, updateOwnProfile } from "@/lib/profile-service";
 
 export async function GET(request: Request) {
   try {
-    await connectToDatabase();
     const profileId = await requireCurrentProfileId(request);
     return Response.json({ profile: await getOwnProfile(profileId) });
   } catch (error) {
@@ -14,7 +12,6 @@ export async function GET(request: Request) {
 }
 export async function PATCH(request: Request) {
   try {
-    await connectToDatabase();
     const profileId = await requireCurrentProfileId(request);
     const body = await readJson(request);
     return Response.json({ profile: await updateOwnProfile(profileId, profilePatchSchema.parse(body)) });

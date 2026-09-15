@@ -2,8 +2,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { ApiError } from "@/lib/api";
 import { getSupabaseUserFromRequest } from "@/lib/supabase/server";
-import { connectToDatabase } from "@/lib/mongodb";
-import { findOrCreateUserForSupabaseAuth } from "@/lib/profile-service";
+import { findUserForSupabaseAuth } from "@/lib/profile-service";
+import { isValidUuid } from "@/lib/supabase/admin";
 
 export const PROFILE_COOKIE = "pramaan_profile_id";
 
@@ -37,19 +37,10 @@ export async function getCurrentProfileId(request?: Request): Promise<string | n
   try {
     const supabaseUser = await getSupabaseUserFromRequest(request);
     if (supabaseUser) {
-      await connectToDatabase();
-      const profile = await findOrCreateUserForSupabaseAuth({
-        supabaseId: supabaseUser.id,
-        email: supabaseUser.email ?? "",
-        displayName:
-          supabaseUser.user_metadata?.full_name ??
-          supabaseUser.user_metadata?.name ??
-          supabaseUser.email?.split("@")[0] ??
-          "Candidate",
-        avatarUrl:
-          supabaseUser.user_metadata?.avatar_url ??
-          supabaseUser.user_metadata?.picture,
-      });
+      const profile = await findUserForSupabaseAuth(
+        supabaseUser.id,
+        supabaseUser.email ?? ""
+      );
       if (profile?.id) {
         return profile.id;
       }
@@ -58,12 +49,12 @@ export async function getCurrentProfileId(request?: Request): Promise<string | n
     console.error("Failed to authenticate Supabase user in profile context:", error);
   }
 
-  // 2. Fall back to signed local profile cookie
+  // 2. Check signed profile cookie
   try {
     const value = (await cookies()).get(PROFILE_COOKIE)?.value;
     if (value) {
       const verified = verifySignedProfileCookie(value);
-      if (verified) return verified;
+      if (verified && isValidUuid(verified)) return verified;
     }
   } catch {
     // Cookie store may fail in non-request contexts

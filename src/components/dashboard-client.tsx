@@ -124,21 +124,21 @@ export default function DashboardClient() {
         </div>
         <h1 className="mt-5 text-2xl font-bold tracking-tight text-stone-900">Welcome to PRAMAAN</h1>
         <p className="mt-2 text-sm text-stone-600 max-w-md">
-          {error ?? "Create your local profile to begin claiming skills, completing proctored benchmarks, and discovering teammates."}
+          {error ?? "Sign in or complete your candidate profile to begin claiming skills, completing proctored benchmarks, and discovering teammates."}
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/login"
             className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-900 bg-stone-900 px-6 text-sm font-semibold text-stone-50 shadow-xs hover:bg-stone-800 transition"
           >
-            <span>Sign In with Google</span>
+            <span>Sign In</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             href="/onboarding"
             className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 bg-white px-5 text-sm font-semibold text-stone-800 shadow-xs hover:bg-stone-50 transition"
           >
-            <span>Create Candidate Profile</span>
+            <span>Create Account / Profile</span>
           </Link>
         </div>
       </main>

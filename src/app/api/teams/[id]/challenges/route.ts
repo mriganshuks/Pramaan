@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { connectToDatabase } from "@/lib/mongodb";
 import { errorResponse, readJson } from "@/lib/api";
 import { requireCurrentProfileId } from "@/lib/profile-context";
 import {
@@ -14,11 +13,10 @@ const decisionSchema = z.object({
   decision: z.enum(["ACCEPT", "REJECT"]),
 });
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await connectToDatabase();
     const { id } = await context.params;
-    const profileId = await requireCurrentProfileId();
+    const profileId = await requireCurrentProfileId(request);
     return Response.json({ challenges: await listTeamChallenges(id, profileId) });
   } catch (error) {
     return errorResponse(error);
@@ -27,9 +25,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await connectToDatabase();
     const { id } = await context.params;
-    const profileId = await requireCurrentProfileId();
+    const profileId = await requireCurrentProfileId(request);
     const body = await readJson(request);
     return Response.json(
       { challenge: await createSkillChallenge(id, profileId, challengeSchema.parse(body)) },
@@ -42,9 +39,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    await connectToDatabase();
     const { id } = await context.params;
-    const profileId = await requireCurrentProfileId();
+    const profileId = await requireCurrentProfileId(request);
     const { challengeId, decision } = decisionSchema.parse(await readJson(request));
     return Response.json(await decideSkillChallenge(id, profileId, challengeId, decision));
   } catch (error) {

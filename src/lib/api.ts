@@ -20,5 +20,7 @@ export async function readJson(request: Request): Promise<unknown> {
 }
 
 export function isDuplicateKeyError(error: unknown) {
-  return typeof error === "object" && error !== null && "code" in error && (error as { code?: number }).code === 11000;
+  if (typeof error !== "object" || error === null) return false;
+  const err = error as { code?: string | number };
+  return err.code === 11000 || err.code === "23505";
 }
