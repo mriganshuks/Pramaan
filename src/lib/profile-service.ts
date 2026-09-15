@@ -8,6 +8,7 @@ import {
   memoryAddProject,
   memoryAddSkill,
   memoryCreateProfile,
+  memoryFindUserBySupabaseOrEmail,
   memoryGetOwnProfile,
   memoryPublicProfile,
   memoryPublicProfileByHandle,
@@ -55,6 +56,81 @@ export async function createProfile(input: z.infer<typeof createProfileSchema>) 
     if (isDuplicateKeyError(error)) throw new ApiError("That email or handle already belongs to a local profile.", 409, "PROFILE_CONFLICT");
     throw error;
   }
+}
+
+export async function findOrCreateUserForSupabaseAuth(input: {
+  supabaseId: string;
+  email: string;
+  displayName: string;
+  avatarUrl?: string;
+}) {
+  const normEmail = input.email.trim().toLowerCase();
+  const displayName = input.displayName.trim() || normEmail.split("@")[0] || "Candidate";
+
+  if (!isDatabaseConnected()) {
+    const existing = memoryFindUserBySupabaseOrEmail(input.supabaseId, normEmail);
+    if (existing) {
+      existing.supabaseId = input.supabaseId;
+      if (!existing.displayName || existing.displayName === "Candidate") {
+        existing.displayName = displayName;
+      }
+      return serializeProfile(existing);
+    }
+
+    const baseHandle = (normEmail.split("@")[0] || "candidate")
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "_")
+      .slice(0, 20);
+    const handle = `${baseHandle.length >= 3 ? baseHandle : "user"}_${Math.floor(1000 + Math.random() * 9000)}`;
+
+    return memoryCreateProfile({
+      displayName,
+      email: normEmail,
+      handle,
+      headline: "",
+      location: "",
+    });
+  }
+
+  // 1. Check if user already exists with this supabaseId
+  let user = await User.findOne({ supabaseId: input.supabaseId });
+  if (user) {
+    return serializeProfile(user);
+  }
+
+  // 2. Check if user exists with matching email (e.g. from prior local profile)
+  if (normEmail) {
+    user = await User.findOne({ email: normEmail });
+    if (user) {
+      user.supabaseId = input.supabaseId;
+      await user.save();
+      return serializeProfile(user);
+    }
+  }
+
+  // 3. Create new user in MongoDB
+  const baseHandle = (normEmail.split("@")[0] || "candidate")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "_")
+    .slice(0, 24);
+  let handle = baseHandle.length >= 3 ? baseHandle : `${baseHandle}_dev`;
+  let suffix = 1;
+  while (await User.exists({ handle })) {
+    handle = `${baseHandle.slice(0, 20)}_${suffix++}`;
+  }
+
+  const newUser = await User.create({
+    supabaseId: input.supabaseId,
+    displayName,
+    email: normEmail,
+    handle,
+    skills: [],
+    projects: [],
+    evidence: [],
+    availableForTeams: true,
+  });
+
+  return serializeProfile(newUser);
 }
 
 export async function getOwnProfile(profileId: string) {

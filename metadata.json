@@ -2,7 +2,8 @@
   "name": "PRAMAAN - Skill Verification & Team Discovery",
   "description": "Proof-over-claims skill verification engine with AI-generated assessments, proctoring violation detection, and hackathon team discovery.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

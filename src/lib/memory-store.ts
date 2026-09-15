@@ -45,6 +45,7 @@ export interface MemoryUser {
   location: string;
   education: string;
   availableForTeams: boolean;
+  supabaseId?: string;
   skills: MemorySkill[];
   projects: MemoryProject[];
   evidence: MemoryEvidence[];
@@ -307,6 +308,15 @@ export async function memoryCreateProfile(input: {
 
   memoryStore.users.set(id, newUser);
   return serializeProfile(newUser);
+}
+
+export function memoryFindUserBySupabaseOrEmail(supabaseId?: string, email?: string) {
+  const normEmail = email?.trim().toLowerCase();
+  for (const u of memoryStore.users.values()) {
+    if (supabaseId && u.supabaseId === supabaseId) return u;
+    if (normEmail && u.email.toLowerCase() === normEmail) return u;
+  }
+  return null;
 }
 
 export async function memoryGetOwnProfile(profileId: string) {

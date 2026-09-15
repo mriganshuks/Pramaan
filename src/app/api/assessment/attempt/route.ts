@@ -8,6 +8,22 @@ export async function GET(request: Request) {
     await connectToDatabase();
     const id = new URL(request.url).searchParams.get("id");
     if (!id) throw new ApiError("An assessment ID is required.", 400, "ASSESSMENT_ID_REQUIRED");
-    return Response.json({ attempt: await getAssessmentAttempt(await requireCurrentProfileId(), id) });
-  } catch (error) { return errorResponse(error); }
+    const profileId = await requireCurrentProfileId(request);
+    const attempt = await getAssessmentAttempt(profileId, id);
+    const session = {
+      id: attempt.id,
+      sessionId: attempt.id,
+      startTime: attempt.startedAt,
+      startedAt: attempt.startedAt,
+      endTime: attempt.expiresAt,
+      expiresAt: attempt.expiresAt,
+      duration: 1800,
+      state: attempt.state,
+      skill: attempt.skill,
+      difficulty: attempt.difficulty,
+    };
+    return Response.json({ attempt, session });
+  } catch (error) {
+    return errorResponse(error);
+  }
 }

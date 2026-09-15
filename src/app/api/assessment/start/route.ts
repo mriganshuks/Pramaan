@@ -9,6 +9,26 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
     const input = schema.parse(await readJson(request));
-    return Response.json({ attempt: await createAssessmentAttempt({ profileId: await requireCurrentProfileId(), skill: input.skill, difficulty: input.difficulty }) }, { status: 201 });
-  } catch (error) { return errorResponse(error); }
+    const profileId = await requireCurrentProfileId(request);
+    const attempt = await createAssessmentAttempt({
+      profileId,
+      skill: input.skill,
+      difficulty: input.difficulty,
+    });
+    const session = {
+      id: attempt.id,
+      sessionId: attempt.id,
+      startTime: attempt.startedAt,
+      startedAt: attempt.startedAt,
+      endTime: attempt.expiresAt,
+      expiresAt: attempt.expiresAt,
+      duration: 1800,
+      state: attempt.state,
+      skill: attempt.skill,
+      difficulty: attempt.difficulty,
+    };
+    return Response.json({ attempt, session }, { status: 201 });
+  } catch (error) {
+    return errorResponse(error);
+  }
 }

@@ -42,6 +42,7 @@ const profileSchema = new Schema(
     location: { type: String, trim: true, maxlength: 100, default: "" },
     education: { type: String, trim: true, maxlength: 160, default: "" },
     availableForTeams: { type: Boolean, default: true },
+    supabaseId: { type: String, trim: true, sparse: true, index: true },
     skills: { type: [skillSchema], default: [] },
     projects: { type: [projectSchema], default: [] },
     evidence: { type: [evidenceSchema], default: [] },
