@@ -3,15 +3,17 @@ import { cookies } from "next/headers";
 
 export async function getSupabaseServerClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const publishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url || !anonKey) {
+  if (!url || !publishableKey) {
     return null;
   }
 
   const cookieStore = await cookies();
 
-  return createServerClient(url, anonKey, {
+  return createServerClient(url, publishableKey, {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value;
@@ -41,9 +43,11 @@ export async function getSupabaseUserFromRequest(request?: Request) {
     if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.substring(7).trim();
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      if (url && anonKey && token) {
-        const client = createServerClient(url, anonKey, {
+      const publishableKey =
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (url && publishableKey && token) {
+        const client = createServerClient(url, publishableKey, {
           cookies: {
             get: () => undefined,
             set: () => {},

@@ -193,7 +193,7 @@ export default function AuthOnboardingClient({ initialMode = "signin" }: Props) 
       const supabase = getSupabaseBrowserClient();
       if (!supabase) {
         throw new Error(
-          "Supabase Auth is not configured. Please define NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+          "Supabase Auth is not configured. Please define NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
         );
       }
 
@@ -255,7 +255,7 @@ export default function AuthOnboardingClient({ initialMode = "signin" }: Props) 
       const supabase = getSupabaseBrowserClient();
       if (!supabase) {
         throw new Error(
-          "Supabase Auth is not configured. Please define NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+          "Supabase Auth is not configured. Please define NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
         );
       }
 
@@ -341,7 +341,7 @@ export default function AuthOnboardingClient({ initialMode = "signin" }: Props) 
       const supabase = getSupabaseBrowserClient();
       if (!supabase) {
         throw new Error(
-          "Supabase Auth is not configured. Please define NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+          "Supabase Auth is not configured. Please define NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
         );
       }
 
@@ -481,7 +481,7 @@ export default function AuthOnboardingClient({ initialMode = "signin" }: Props) 
             </p>
             <p className="mt-1 text-amber-800 leading-relaxed">
               Define <code className="font-mono bg-amber-100/80 px-1 py-0.5 rounded">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-              <code className="font-mono bg-amber-100/80 px-1 py-0.5 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in your environment variables to enable production Supabase Auth.
+              <code className="font-mono bg-amber-100/80 px-1 py-0.5 rounded">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> in your environment variables to enable production Supabase Auth.
             </p>
           </div>
         )}
